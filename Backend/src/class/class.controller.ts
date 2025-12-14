@@ -1,0 +1,71 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Res,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { ClassService } from './class.service';
+import { CreateClassDto } from './dto/create-class.dto';
+import { UpdateClassDto } from './dto/update-class.dto';
+
+@Controller('class')
+export class ClassController {
+  constructor(private readonly classService: ClassService) {}
+
+  @Post()
+  async create(@Body() createClassDto: CreateClassDto) {
+    return this.classService.create(createClassDto);
+  }
+
+  @Get()
+  async findAll() {
+    return this.classService.findAll();
+  }
+
+  @Get('with-student-count')
+  async findAllWithStudentCount() {
+    return this.classService.getAllClassesWithStudentCount();
+  }
+
+  @Get('export/pdf')
+  async exportToPdf(@Res() res: Response) {
+    const pdfBuffer = await this.classService.generateClassesPdf();
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename=classes-report.pdf',
+      'Content-Length': pdfBuffer.length,
+    });
+
+    res.end(pdfBuffer);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: number) {
+    return this.classService.findOne(Number(id));
+  }
+
+  @Get(':id/enrolled-students-count')
+  async getEnrolledStudentsCount(@Param('id') id: number) {
+    const count = await this.classService.getEnrolledStudentsCount(Number(id));
+    return { classId: Number(id), enrolledStudents: count };
+  }
+
+  @Put(':id')
+  async update(
+    @Param('id') id: number,
+    @Body() updateClassDto: UpdateClassDto,
+  ) {
+    return this.classService.update(Number(id), updateClassDto);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: number): Promise<void> {
+    return this.classService.remove(Number(id));
+  }
+}
